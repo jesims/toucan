@@ -99,6 +99,20 @@ jobs:
           command: lein check-namespace-decls
           no_output_timeout: 5m
 
+  snapshot:
+    working_directory: /home/circleci/metabase/toucan
+    docker:
+      - image: circleci/clojure:lein-2.8.1
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - run:
+          name: Append -SNAPSHOT to version
+          command: lein change version str "\"-SNAPSHOT\""
+      - run:
+          name: Deploy to clojars
+          command: lein deploy clojars
+
   deploy:
     working_directory: /home/circleci/metabase/toucan
     docker:
@@ -130,6 +144,16 @@ workflows:
       - lint-namespace-decls:
           requires:
             - checkout
+      - snapshot:
+          requires:
+            - test
+            - lint-bikeshed
+            - lint-eastwood
+            - lint-docstrings
+            - lint-namespace-decls
+          filters:
+            branches:
+              ignore: master
       - deploy:
           requires:
             - test
